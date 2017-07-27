@@ -44,7 +44,6 @@ Note that this script is based on the dataset process script at: https://github.
  <br>
   The normlization of Cifar dataset is in the script th exp_res_dataNorm.lua. The residual network model and respective script are based on [facebook ResNet](https://github.com/facebook/fb.resnet.torch).
 
-
 ####  5. GoogLeNet over ImageNet
 This experiment is based on the project at: https://github.com/soumith/imagenet-multiGPU.torch.
 <br>
