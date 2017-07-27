@@ -6,11 +6,7 @@ This project is the code of the paper: Centered Weight Normalization  in Acceler
 
 ## Requirements and Dependency
 * install [Torch](http://torch.ch) with CUDA GPU
-<br>
-
 * install [cudnn v5](http://torch.ch)
-<br>
-
 * install dependent lua packages optnet by run:
 luarocks install optnet
 
@@ -36,15 +32,17 @@ Note that this script is based on the dataset process script at: https://github.
 
 #### 3. GoogLeNet architecture over Cifar datasets
 
- *	Dataset preparations: The dataset is whitened and can be found on https://yadi.sk/d/em4b0FMgrnqxy.  
+ *	Dataset preparations: The dataset is based on [whitened CIFAR datasets] (https://yadi.sk/d/em4b0FMgrnqxy).  
  * Execute: th exp_GoogleNet_dataWhitening.lua –dataPath './dataset/cifar100_whitened.t7'.
+ <br>
   The GoogLeNet model is based on the project on: https://github.com/soumith/imagenet-multiGPU.torch
 
 #### 4. Residual network architecture over Cifar datasets
 
- *	Dataset preparations: The dataset is based on https://yadi.sk/d/eFmOduZyxaBrT, and the data file should put in the directory: ./dataset/cifar_original.t7.  
+ *	Dataset preparations: The dataset is based on [original CIFAR datasets] (https://yadi.sk/d/eFmOduZyxaBrT), and the data file should put in the directory: ./dataset/cifar_original.t7.  
  *	Execute: th exp_res_dataNorm.lua –dataPath './dataset/cifar10_original.t7'. 
-  The residual network model and respective script are based on the project: https://github.com/facebook/fb.resnet.torch
+ <br>
+  The normlization of Cifar dataset is in the script th exp_res_dataNorm.lua. The residual network model and respective script are based on the project: https://github.com/facebook/fb.resnet.torch
 
 
 ####  5. GoogLeNet over ImageNet
