@@ -1,5 +1,7 @@
--- Code for Wide Residual Networks http://arxiv.org/abs/1605.07146
--- (c) Sergey Zagoruyko, 2016
+--The script is based on the torch implementation of Wide Residual Networks http://arxiv.org/abs/1605.07146,
+--on: https://github.com/szagoruyko/wide-residual-networks
+----------------------------------------------------------------------------
+
 require 'xlua'
 require 'optim'
 require 'image'
@@ -22,8 +24,7 @@ cmd:text('compare the Decorelated BatchNormalizaiton method with baselines on wi
 cmd:text()
 cmd:text('Options')
 
-cmd:option('-dataset','/home/huanglei/torch_work/dataset/cifar100_whitened.t7','')
---cmd:option('-dataset','/home/huanlei/torch_work/dataset/MNIST_GlobalNormalized.t7','')
+cmd:option('-dataset','./dataset/cifar100_whitened.t7','')
 cmd:option('-model','googlenetbn_CWN_NS','')
 cmd:option('-max_epoch',100,'maximum number of iterations')
 cmd:option('-epoch_step',"{40,80}",'epoch step: no lr annealing if it is larger than the maximum')
@@ -43,8 +44,6 @@ cmd:option('-eps',1e-5,'the revisation for DBN')
 cmd:option('-BNScale',1,'the initial value for BN scale')
 cmd:option('-scaleIdentity',0,'1 indicates scaling the Identity shortcut;0 indicates not')
 cmd:option('-noNesterov',0,'1 indicates dont use nesterov momentum;0 indicates not')
-cmd:option('-topK',8,'for DBN_PK method, scale the topK eigenValue')
-cmd:option('-eig_epsilo',1e-2,'for DBN_PEP method, scale the eigenValue larger eig_epsilo')
 
 cmd:option('-widen_factor',1,'')
 cmd:option('-depth',56,'')
@@ -65,14 +64,11 @@ cmd:option('-optnet_optimize',false,'')
 cmd:option('-generate_graph',false,'')
 cmd:option('-multiply_input_factor',1,'')
 
---for debug weight norm
-cmd:option('-weight_debug',0,'0 indicates not debug weight; 1 indicates debug Global weight and GradW; 2 indicates add observe per module')
 cmd:option('-seed',1,'the step to debug the weights')
-cmd:option('-T',389,'the step to debug the weights')
 
 opt = cmd:parse(arg)
 
-opt.rundir = cmd:string('console/exp_0_debug_Cifar/Info', opt, {dir=true})
+opt.rundir = cmd:string('console/exp_Cifar_GoogLeNet/Info', opt, {dir=true})
 paths.mkdir(opt.rundir)
 
 cmd:log(opt.rundir .. '/log', opt)
@@ -124,7 +120,7 @@ end
 
 local function log(t) print('json_stats: '..json.encode(tablex.merge(t,opt,true))) end
 
-log_name='cifar100_'..opt.model..'_depth'..opt.depth..'_h'..opt.hidden_number..'_lr'..opt.learningRate..'_G'..opt.m_perGroup..'_b'..opt.batchSize..'_BI'..opt.BNScale..'_s'..opt.scaleIdentity..'_eps'..opt.eps..'_wD'..opt.weightDecay..'_mm'..opt.momentum..'_nN'..opt.noNesterov..'_lD'..opt.learningRateDecay
+log_name='cifar100_'..opt.model..'_depth'..opt.depth..'_h'..opt.hidden_number..'_lr'..opt.learningRate
 opt.save=opt.save..'/'..log_name
 print('Will save at '..opt.save)
 paths.mkdir(opt.save)
@@ -153,32 +149,6 @@ print(c.blue'==>' ..' configuring optimizer')
 local optimState = tablex.deepcopy(opt)
 
 
-function debug_scale(name)
-   for k,v in pairs(model:findModules(name)) do
-      local scale= v.weight
-      --local bias= v.bias
-      local norm=v.weight:norm(1)/v.weight:numel()
-      local mean=v.weight:mean() 
-     print(name..'--scale Norm:'..norm..'--mean:'..mean)
-   end
-end
-
-function debug_recordScale()
-  local scales={}
-  for k,v in pairs(model:findModules('nn.SpatialBatchNormalization')) do
-   -- print('----------debug match--------') 
-    table.insert(scales, v.weight:float())
-  end
-   for k,v in pairs(model:findModules('nn.Spatial_Scaling')) do
-     table.insert(scales, v.weight:float())
-  end
-  for k,v in pairs(model:findModules('cudnn.SpatialBatchNormalization')) do
-     table.insert(scales, v.weight:float())
-  end
-
-  table.insert(scale_epoch, scales)
-end
-
 function train()
   model:training()
 
@@ -200,104 +170,14 @@ function train()
       local loss_Iter=f(inputs, targets)
       
       confusion:batchAdd(model.output, targets)
-     if opt.weight_debug>=1 and (iteration % opt.step_WD ==0 ) then
-         local Norm_gradP=torch.norm(gradParameters,1)/gradParameters:size(1)
-         local Norm_P=torch.norm(parameters,1)/gradParameters:size(1)
-         print(string.format("Iter: %6s,  N_GP=%3.12f, N_P=%3.12f, loss = %6.6f", iteration, Norm_gradP,Norm_P, loss_Iter))
-        if opt.weight_debug==2 then 
-          local Norm_input=torch.norm(inputs,1)/inputs:numel()
-          print('Norm_input:'..Norm_input)
-
-
-          local Norm_GP_table={}
-          local Norm_P_table={}
-          local Norm_GInput_table={}
-          local Norm_Output_table={} 
-         for k,v in pairs(model:findModules('nn.SpatialConvolution')) do
-          --for k,v in pairs(model:findModules('nn.SpatialMM_ForDebug')) do
-            table.insert(Norm_GP_table, torch.norm(v.gradWeight,1)/v.gradWeight:numel())
-            table.insert(Norm_P_table, torch.norm(v.weight,1)/v.weight:numel())
-            table.insert(Norm_GInput_table, torch.norm(v.gradInput,1)/v.gradInput:numel())
-            table.insert(Norm_Output_table, torch.norm(v.output,1)/v.output:numel()) 
-          end
-
-          for k,v in pairs(model:findModules('cudnn.SpatialConvolution')) do
-         -- print(v.weight:size())
-            table.insert(Norm_GP_table, torch.norm(v.gradWeight,1)/v.gradWeight:numel())
-            table.insert(Norm_P_table, torch.norm(v.weight,1)/v.weight:numel())
-            table.insert(Norm_GInput_table, torch.norm(v.gradInput,1)/v.gradInput:numel())
-            table.insert(Norm_Output_table, torch.norm(v.output,1)/v.output:numel())
-
-          end
-          for k,v in pairs(model:findModules('nn.Spatial_Weight_CenteredBN')) do
-         -- print(v.weight:size())
-            table.insert(Norm_GP_table, torch.norm(v.gradWeight,1)/v.gradWeight:numel())
-            table.insert(Norm_P_table, torch.norm(v.weight,1)/v.weight:numel())
-            table.insert(Norm_GInput_table, torch.norm(v.gradInput,1)/v.gradInput:numel())
-            table.insert(Norm_Output_table, torch.norm(v.output,1)/v.output:numel())
-         end
-          for k,v in pairs(model:findModules('nn.Spatial_Weight_BN')) do
-         -- print(v.weight:size())
-            table.insert(Norm_GP_table, torch.norm(v.gradWeight,1)/v.gradWeight:numel())
-            table.insert(Norm_P_table, torch.norm(v.weight,1)/v.weight:numel())
-            table.insert(Norm_GInput_table, torch.norm(v.gradInput,1)/v.gradInput:numel())
-            table.insert(Norm_Output_table, torch.norm(v.output,1)/v.output:numel())
-         end
-          for k,v in pairs(model:findModules('nn.Spatial_Weight_DBN_Row')) do
-         -- print(v.weight:size())
-            table.insert(Norm_GP_table, torch.norm(v.gradWeight,1)/v.gradWeight:numel())
-            table.insert(Norm_P_table, torch.norm(v.weight,1)/v.weight:numel())
-            table.insert(Norm_GInput_table, torch.norm(v.gradInput,1)/v.gradInput:numel())
-            table.insert(Norm_Output_table, torch.norm(v.output,1)/v.output:numel())
-         end
-          local Norm_GP_perModule=torch.FloatTensor(Norm_GP_table):reshape(1,table.getn(Norm_GP_table))
-          local Norm_P_perModule=torch.FloatTensor(Norm_P_table):reshape(1,table.getn(Norm_P_table))
-          local Norm_GInput_perModule=torch.FloatTensor(Norm_GInput_table):reshape(1,table.getn(Norm_GInput_table))
-          local Norm_Output_perModule=torch.FloatTensor(Norm_Output_table):reshape(1,table.getn(Norm_Output_table))
-               
-          table.insert(Norm_GradWeight, Norm_GP_perModule:clone())
-          table.insert(Norm_Weight, Norm_P_perModule:clone())
-          table.insert(Norm_GradInput, Norm_GInput_perModule:clone())
-          table.insert(Norm_Output, Norm_Output_perModule:clone())     
-         print('Norm_GradWeight_perModule')
-         print(Norm_GP_perModule)
-         print('Norm_Weight_perModule')
-         print(Norm_P_perModule)
-          print('Norm_GradInput_perModule')
-         print(Norm_GInput_perModule)
-          print('Norm_Output_perModule')
-          print(Norm_Output_perModule)
-        local Norm_scale_table={} 
-         for k,v in pairs(model:findModules('nn.Spatial_Scaling')) do
-         -- print(v.weight:size())
-            table.insert(Norm_scale_table, torch.norm(v.weight,1)/v.weight:numel())
-         end
-         local Norm_scale_perModule
-         if table.getn(Norm_scale_table)>0 then
-          Norm_scale_perModule=torch.FloatTensor(Norm_scale_table):reshape(1,table.getn(Norm_scale_table))
-         print('Norm_scale_perModule')
-         print(Norm_scale_perModule)
-         end
-
-       end         
-    else
        print(string.format("Iter: %6s,  loss = %6.6f", iteration,loss_Iter))            
-    end 
 
       losses[#losses+1]=loss_Iter
       loss = loss + loss_Iter
        iteration=iteration+1
 
      local timeCosts=torch.toc(start_time)
-
-    print(string.format("time Costs = %6.6f", timeCosts))
-
-    --  debug_scale('nn.SpatialBatchNormalization') 
-    --  debug_scale('nn.Spatial_Scaling') 
-    --  debug_scale('cudnn.SpatialBatchNormalization') 
-
-
-
+--    print(string.format("time Costs = %6.6f", timeCosts))
 
       return f,gradParameters
     end, parameters, optimState)
@@ -325,40 +205,6 @@ function test()
 
   confusion:updateValids()
 
- if testLogger then
-    paths.mkdir(opt.save)
-    testLogger:add{train_acc, confusion.totalValid * 100}
-    testLogger:style{'-','-'}
-    testLogger:plot()
-
-    local base64im
-    do
-       os.execute(('convert -density 200 %s/test.log.eps %s/test.png'):format(opt.save,opt.save))
-      os.execute(('openssl base64 -in %s/test.png -out %s/test.base64'):format(opt.save,opt.save))
-      local f = io.open(opt.save..'/test.base64')
-       if f then base64im = f:read'*all' end
-     end
-      local file = io.open(opt.save..'/report.html','w')
-    file:write(([[
-    <!DOCTYPE html>
-    <html>
-    <body>
-    <title>%s - %s</title>
-    <img src="data:image/png;base64,%s">
-    <h4>optimState:</h4>
-    <table>
-    ]]):format(opt.save,epoch,base64im))
-    for k,v in pairs(optimState) do
-      if torch.type(v) == 'number' then
-        file:write('<tr><td>'..k..'</td><td>'..v..'</td></tr>\n')
-      end
-    end
-    file:write'</table><pre>\n'
-    file:write(tostring(confusion)..'\n')
-    file:write(tostring(model)..'\n')
-    file:write'</pre></body></html>'
-    file:close()
-  end
 
   return confusion.totalValid * 100
 end
@@ -372,10 +218,6 @@ test_accus={}
 train_times={}
 test_times={}
 scale_epoch={}
-Norm_GradWeight={}
-Norm_Weight={}
-Norm_GradInput={}
-Norm_Output={}
 start_time=torch.tic()
 
 
@@ -429,19 +271,9 @@ results.test_accus=test_accus
 results.losses_epoch=losses_epoch
 results.train_times=train_times
 results.test_times=test_times
---results.scale_epoch=scale_epoch
---results.Norm_GradWeight=Norm_GradWeight
---results.Norm_Weight=Norm_Weight
---results.Norm_GradInput=Norm_GradInput
---results.Norm_Output=Norm_Output
 
 --torch.save(opt.save..'/model.t7', net:clearState())
 torch.save('result_ICCV_cifar100_ED_'..opt.model..'_depth'..opt.depth
-..'_h'..opt.hidden_number..'_lr'..lr_init
-..'_G'..opt.m_perGroup..'_b'..opt.batchSize..'_wf'..opt.widen_factor..'_s'..opt.scaleIdentity
-..'_wD'..opt.weightDecay..'_mm'..opt.momentum
-..'_nN'..opt.noNesterov..'_lD'..opt.learningRateDecay
-..'_seed'..opt.seed
-..'.dat',results)
+..'_seed'..opt.seed..'.dat',results)
 
 end

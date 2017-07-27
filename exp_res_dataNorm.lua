@@ -11,10 +11,6 @@ paths.dofile'augmentation.lua'
 
 -- for memory optimizations and graph generation
 local optnet = require 'optnet'
-local graphgen = require 'optnet.graphgen'
---local iterm = require 'iterm'
---require 'iterm.dot'
-  -- threads
    threadNumber=2
  torch.setnumthreads(threadNumber)
 
@@ -26,8 +22,7 @@ cmd:text('compare the Decorelated BatchNormalizaiton method with baselines on wi
 cmd:text()
 cmd:text('Options')
 
-cmd:option('-dataset','/home/huanglei/torch_work/dataset/cifar10_original.t7','')
---cmd:option('-dataset','/home/huanglei/torch_work/dataset/MNIST_GlobalNormalized.t7','')
+cmd:option('-dataset','./dataset/cifar10_original.t7','')
 cmd:option('-model','old_r_CWN_BN_NS','')
 cmd:option('-max_epoch',160,'maximum number of iterations')
 cmd:option('-epoch_step',"{80,120}",'epoch step: no lr annealing if it is larger than the maximum')
@@ -48,8 +43,6 @@ cmd:option('-eps',1e-5,'the revisation for DBN')
 cmd:option('-BNScale',1,'the initial value for BN scale')
 cmd:option('-scaleIdentity',0,'1 indicates scaling the Identity shortcut;0 indicates not')
 cmd:option('-noNesterov',1,'1 indicates dont use nesterov momentum;0 indicates not')
-cmd:option('-topK',8,'for DBN_PK method, scale the topK eigenValue')
-cmd:option('-eig_epsilo',1e-2,'for DBN_PEP method, scale the eigenValue larger eig_epsilo')
 
 cmd:option('-widen_factor',1,'')
 cmd:option('-depth',56,'')
@@ -70,11 +63,7 @@ cmd:option('-optnet_optimize',false,'')
 cmd:option('-generate_graph',false,'')
 cmd:option('-multiply_input_factor',1,'')
 
---for debug weight norm
-cmd:option('-weight_debug',0,'0 indicates not debug weight; 1 indicates debug Global weight and GradW; 2 indicates add observe per module')
-cmd:option('-step_WD',1,'the step to debug the weights')
 cmd:option('-seed',1,'the step to debug the weights')
-cmd:option('-T',389,'the step to debug the weights')
 cmd:option('-modelSave',1,'the step to debug the weights')
 
 opt = cmd:parse(arg)
@@ -109,8 +98,6 @@ local meanstd = {mean = {125.3, 123.0, 113.9}, std  = {63.0,  62.1,  66.7}}
  end
 
 
-
-
 opt.num_classes = provider.testData.labels:max()
 opt.num_feature = provider.testData.data:size(2)
 
@@ -138,9 +125,6 @@ do
    print('Network has', #model:findModules'cudnn.SpatialConvolution', 'convolutions')
 
    local sample_input = torch.randn(8,3,opt.imageSize,opt.imageSize):cuda()
-   if opt.generate_graph then
-      iterm.dot(graphgen(net, sample_input), opt.save..'/graph.pdf')
-   end
    if opt.optnet_optimize then
       --optnet.optimizeMemory(net, sample_input, {inplace = false, mode = 'training'})
    end
@@ -148,11 +132,7 @@ end
 
 local function log(t) print('json_stats: '..json.encode(tablex.merge(t,opt,true))) end
 baseString=opt.model..'_depth'..opt.depth
-         ..'_h'..opt.hidden_number..'_lr'..opt.learningRate
-         ..'_G'..opt.m_perGroup..'_b'..opt.batchSize..'_wf'..opt.widen_factor..'_s'..opt.scaleIdentity
-         ..'_wD'..opt.weightDecay..'_mm'..opt.momentum
-         ..'_nN'..opt.noNesterov..'_lD'..opt.learningRateDecay..'_dr'..opt.dropout
-         ..'_seed'..opt.seed
+         ..'_h'..opt.hidden_number..'_lr'..opt.learningRate..'_seed'..opt.seed
 
          
 log_name='Cifar10_NoW_'..baseString
@@ -215,18 +195,7 @@ function train()
 
       timeCosts=torch.toc(start_time)
 
-    print(string.format("time Costs = %6.6f", timeCosts))
-
-      if iteration ~=0 and iteration % opt.T==0 then
-
-        for k,v in pairs(model:findModules('nn.Spatial_SVB')) do
-          v:updateWeight(0.5)
-         end
-      end
       
-    --  debug_scale('nn.SpatialBatchNormalization') 
-    --  debug_scale('nn.Spatial_Scaling') 
-    --  debug_scale('cudnn.SpatialBatchNormalization') 
 
       return f,gradParameters
     end, parameters, optimState)
@@ -254,40 +223,6 @@ function test()
 
   confusion:updateValids()
 
- if testLogger then
-    paths.mkdir(opt.save)
-    testLogger:add{train_acc, confusion.totalValid * 100}
-    testLogger:style{'-','-'}
-    testLogger:plot()
-
-    local base64im
-    do
-       os.execute(('convert -density 200 %s/test.log.eps %s/test.png'):format(opt.save,opt.save))
-      os.execute(('openssl base64 -in %s/test.png -out %s/test.base64'):format(opt.save,opt.save))
-      local f = io.open(opt.save..'/test.base64')
-       if f then base64im = f:read'*all' end
-     end
-      local file = io.open(opt.save..'/report.html','w')
-    file:write(([[
-    <!DOCTYPE html>
-    <html>
-    <body>
-    <title>%s - %s</title>
-    <img src="data:image/png;base64,%s">
-    <h4>optimState:</h4>
-    <table>
-    ]]):format(opt.save,epoch,base64im))
-    for k,v in pairs(optimState) do
-      if torch.type(v) == 'number' then
-        file:write('<tr><td>'..k..'</td><td>'..v..'</td></tr>\n')
-      end
-    end
-    file:write'</table><pre>\n'
-    file:write(tostring(confusion)..'\n')
-    file:write(tostring(model)..'\n')
-    file:write'</pre></body></html>'
-    file:close()
-  end
 
   return confusion.totalValid * 100
 end

@@ -1,13 +1,8 @@
 --Centered  Weight Normalization
--- the code is based on the original implement of  weight normalizaiton on https://github.com/torch/nn/blob/master/WeightNorm.lua  and it's implementation: https://arxiv.org/pdf/1602.07868v3.pdf
+-- the code is based on the Torch implement of  weight normalizaiton on https://github.com/torch/nn/blob/master/WeightNorm.lua  and the refered paper: https://arxiv.org/pdf/1602.07868v3.pdf
 local WeightNorm_Center, parent = torch.class("nn.WeightNorm_Center", "nn.Decorator")
 
 function WeightNorm_Center:__init(module, outputDim, flag_adjustScale)
-    -- this container will apply Weight Normalization to any module it wraps
-    -- it accepts parameter ``outputDim`` that represents the dimension of the output of the weight
-    -- if outputDim is not 1, the container will transpose the weight
-    -- if the weight is not 2D, the container will view the weight into a 2D shape
-    -- that is nOut x (nIn x kw x dw x ...)
 
     parent.__init(self, module)
     assert(module.weight)

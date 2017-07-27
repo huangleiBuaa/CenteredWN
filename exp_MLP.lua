@@ -28,9 +28,9 @@ cmd:text('compare the Decorelated BatchNormalizaiton method with baselines on ML
 cmd:text()
 cmd:text('Options')
 
-cmd:option('-model_method','sgd','the methods: options:WNorm, WBN_Row,WCBN_Row,WGC,WO_Row,WO_Row_batch,WOBN_Row')
+cmd:option('-model','CWN_Row_scale','the methods:sgd, WN_Row_scale, WCBN_Row_scale')
 cmd:option('-mode_nonlinear',2,'nonlinear module: 1 indicates tanh, 0 indicates sigmoid, 2 indecates Relu')
-cmd:option('-max_epoch',200,'maximum number of iterations')
+cmd:option('-max_epoch',200,'maximum number of epochs')
 cmd:option('-n_hidden_number',128,'the dimension of the hidden laysers')
 cmd:option('-save',"log_MLP_svhn" ,'subdirectory to save logs')
 cmd:option('-inputScaled',true,'whether preoprocess the input, scale to (0,1)')
@@ -41,15 +41,9 @@ cmd:option('-weightDecay',0,'weight Decay for regularization')
 cmd:option('-momentum',0,'momentum')
 
 cmd:option('-optimization','simple','the methods: options:adam,simple,rms,adagrad,lbfgs')
----------------for nnn BatchLinear_NoBP realted method----------------
-cmd:option('-T',200,'the interval to update the coefficient')
+cmd:option('-T',200,'the interval to update the coefficient, for natural neural network')
 cmd:option('-epcilo',1,'the revision term for natural neural network')
---cmd:option('-lrD_epoch',1000,'the epoch to half the learningRate')
 cmd:option('-seed',1,'the random seed')
-cmd:option('-orth_intial',false,'the random seed')
-cmd:option('-weight_debug',0,'0 indicates not debug weight; 1 indicates debug Global weight and GradW; 2 indicates add observe per module')
-cmd:option('-step_WD',1,'the step to debug the weights')
-cmd:option('-BNScale',1,'the initial value for BN scale')
 
 
 cmd:text()
@@ -132,8 +126,8 @@ end
     return data
 end
   
- trainData = torch.load('/home/huanglei/torch_work/dataset/svhn/svhn_train_1024.dat')
- testData = torch.load('/home/huanglei/torch_work/dataset/svhn/svhn_test_1024.dat')
+ trainData = torch.load('./dataset/svhn_train_1024.dat')
+ testData = torch.load('./dataset/svhn_test_1024.dat')
 
 
 opt.n_inputs=trainData.data:size(2) 
@@ -189,7 +183,7 @@ model, criterion = create_model(opt)
 print('Will save at '..opt.save)
 paths.mkdir(opt.save)
 
-log_name=opt.model_method..'_'..opt.optimization..'_lr'..opt.learningRate..'.log'
+log_name=opt.model..'_'..opt.optimization..'_lr'..opt.learningRate..'.log'
 
 testLogger = optim.Logger(paths.concat(opt.save, log_name))
 testLogger:setNames{'% mean class accuracy (train set)', '% mean class accuracy (test set)'}
@@ -243,9 +237,6 @@ print(model)
 
       end
 
-
-
-
       timeCosts[#timeCosts+1]=torch.toc(start_time)
      -- print(string.format("time Costs = %6.6f", timeCosts[#timeCosts]))
       iteration=iteration+1
@@ -254,35 +245,19 @@ print(model)
 
    optimMethod (feval, parameters, opt.optimState)
    
-      if ((string.match(opt.model_method,'nnn'))  and iteration % opt.T ==0) then
+      if ((string.match(opt.model,'nnn'))  and iteration % opt.T ==0) then
     ------------------start:update the proMatrix of NNN-------------------------------
         local index = torch.randperm(trainData.data:size(1))[{{1, opt.Ns}}]:long()
         
         local  batch_inputs=trainData.data:index(1,index)
         local  batch_targets = trainData.labels:index(1,index)
         local  batch_outputs = model:forward(batch_inputs)
-    
-
-        --model:updateNormLinearParameter(batch_inputs, dloss_doutput, scale,  opt.Ns, opt.epcilo)
         for k,v in pairs(model:findModules('nn.NormLinear_new')) do
           print('update nnn projection:')
           v:updatePromatrix(opt.epcilo)
         end
      end
     ------------------end:update the proMatrix of NNN-------------------------------
-
-      if ((string.match(opt.model_method,'SVB'))  and iteration % opt.T ==0) then
-    ------------------start:update the weightMatrix of SVB-------------------------------
-
-        for k,v in pairs(model:findModules('nn.Linear_SVB')) do
-          print('update weight by SVB:')
-          v:updateWeight(0.5)
-        end
-     end
-    ------------------end:update the proMatrix of NNN-------------------------------
-
-      -- print(string.format("Iter: %6s,  loss = %6.6f", iteration,f))
-   
   end
 
   confusion:updateValids()
@@ -307,7 +282,6 @@ function test()
     local outputs = model:forward(testData.data:narrow(1,i,bs))
     confusion:batchAdd(outputs, testData.labels:narrow(1,i,bs))
   end
-
   confusion:updateValids()
   print('Test accuracy:', confusion.totalValid * 100)
    test_accus[#test_accus+1]=confusion.totalValid * 100
@@ -318,7 +292,6 @@ function test()
     testLogger:plot()
    end
   confusion:zero()
-
 end
 
 iteration=0
@@ -333,10 +306,6 @@ train_accus={}
 test_accus={}
 start_time=torch.tic()
 
-Norm_GradWeight={}
-Norm_Weight={}
-Norm_GradInput={}
-Norm_Output={}
 
 for i=1,opt.max_epoch do
 --  train()
@@ -347,12 +316,9 @@ for i=1,opt.max_epoch do
  train_times[#train_times+1]=train_time
  print('train Time:'..train_time)
 
-
   local  test_time = t(test)
   test_times[#test_times+1]=test_time
   print('test Time:'..test_time)
-
-
 
 end
 
@@ -362,16 +328,10 @@ results.opt=opt
 results.losses=losses
 results.train_accus=train_accus
 results.test_accus=test_accus
---results.timeCosts=timeCosts
---results.testLogger=testLogger
---results.confusion=confusion
-results.train_times=train_times
-results.test_times=test_times
 
-torch.save('result_MLP_'..opt.model_method..
+torch.save('result_MLP_'..opt.model..
 '_'..opt.optimization..'_b'..opt.batchSize..'_lr'..opt.learningRate..
 '_nl'..opt.mode_nonlinear..'_mm'..opt.momentum..
-'_ep'..opt.epcilo..'_T'..opt.T..
 '_ME'..opt.max_epoch..
 '_seed'..opt.seed..
 '.dat',results)
