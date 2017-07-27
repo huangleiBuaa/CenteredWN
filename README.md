@@ -42,7 +42,7 @@ Note that this script is based on the dataset process script at: https://github.
  *	Dataset preparations: The dataset is based on [original CIFAR datasets](https://yadi.sk/d/eFmOduZyxaBrT), and the data file should put in the directory: ./dataset/cifar_original.t7.  
  *	Execute: th exp_res_dataNorm.lua –dataPath './dataset/cifar10_original.t7'. 
  <br>
-  The normlization of Cifar dataset is in the script th exp_res_dataNorm.lua. The residual network model and respective script are based on [facebook residual network project](https://github.com/facebook/fb.resnet.torch)
+  The normlization of Cifar dataset is in the script th exp_res_dataNorm.lua. The residual network model and respective script are based on [facebook ResNet](https://github.com/facebook/fb.resnet.torch).
 
 
 ####  5. GoogLeNet over ImageNet
