@@ -21,7 +21,7 @@ luarocks install optnet
    th preProcess_div256.lua
  ```
 We get the preprocessed SVHN dataset for MLP architecture.
-Note that this script is based on the dataset process script at: https://github.com/torch/tutorials/blob/master/A_datasets/svhn.lua
+Note that this script is based on the [Torch script for SVHN](https://github.com/torch/tutorials/blob/master/A_datasets/svhn.lua)
 
 *	Execute: 
 ```Bash
@@ -30,7 +30,7 @@ Note that this script is based on the dataset process script at: https://github.
 
 
 #### 2. VGG-A architecture over Cifar-10 dataset
-* Dataset preparations: the dataset is based on the preprocessed script on: https://github.com/szagoruyko/cifar.torch, and put the data file in the directory: ./dataset/cifar_provider.t7
+* Dataset preparations: the dataset is based on the preprocessed script on: https://github.com/szagoruyko/cifar.torch, and put the data file in the directory: './dataset/cifar_provider.t7'
 
 * Execute:
 ```Bash
@@ -60,4 +60,7 @@ th exp_res_dataNorm.lua –dataPath './dataset/cifar10_original.t7'
 This experiment is based on the project at: https://github.com/soumith/imagenet-multiGPU.torch.
 <br>
 The proposed model are in: './models/imagenet/'
+
+## Contact
+huanglei@nlsde.buaa.edu.cn, Any discussions and suggestions are welcome!
 
