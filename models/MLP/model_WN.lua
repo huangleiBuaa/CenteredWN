@@ -165,7 +165,7 @@ function create_model(opt)
 
 -----------------------------------------model configure-------------------
 
-  if opt.model_method=='sgd' then 
+  if opt.model=='sgd' then 
        model:add(linear(opt.n_inputs,cfg_hidden[1]))
     for i=1,n do
        if i==n then
@@ -176,7 +176,7 @@ function create_model(opt)
 
        end
      end 
-  elseif opt.model_method=='batch' then 
+  elseif opt.model=='batch' then 
        model:add(linear(opt.n_inputs,cfg_hidden[1]))
     for i=1,n do
        if i==n then
@@ -188,7 +188,7 @@ function create_model(opt)
        end
      end
  
-  elseif opt.model_method=='batch_var' then 
+  elseif opt.model=='batch_var' then 
        model:add(linear(opt.n_inputs,cfg_hidden[1]))
     for i=1,n do
        if i==n then
@@ -201,7 +201,7 @@ function create_model(opt)
      end 
 
 
-  elseif opt.model_method=='nnn' then
+  elseif opt.model=='nnn' then
    model:add(linear(opt.n_inputs,cfg_hidden[1]))
      for i=1,n do
        if i==n then
@@ -211,7 +211,7 @@ function create_model(opt)
        end
      end
 
-  elseif opt.model_method=='nnn_batch' then
+  elseif opt.model=='nnn_batch' then
    model:add(linear(opt.n_inputs,cfg_hidden[1]))
      for i=1,n do
        if i==n then
@@ -222,7 +222,7 @@ function create_model(opt)
      end
 
 
- elseif opt.model_method=='WN_Row' then   
+ elseif opt.model=='WN_Row' then   
 
      model:add(nn.Linear_Weight_BN_Row(opt.n_inputs,cfg_hidden[1]))
     -- model:add(module_affine(cfg_hidden[1],1,true))
@@ -234,7 +234,7 @@ function create_model(opt)
          model:add(block_WN_Row(cfg_hidden[i],cfg_hidden[i+1])) 
        end
      end 
- elseif opt.model_method=='WN_Row_scale' then
+ elseif opt.model=='WN_Row_scale' then
 
      model:add(nn.Linear_Weight_BN_Row(opt.n_inputs,cfg_hidden[1]))
      model:add(module_affine(cfg_hidden[1],1,true))
@@ -246,7 +246,7 @@ function create_model(opt)
          model:add(block_WN_Row_scale(cfg_hidden[i],cfg_hidden[i+1]))
        end
      end
-   elseif opt.model_method=='WCBN_Row' then   
+   elseif opt.model=='CWN_Row' then   
 
      model:add(nn.Linear_Weight_CenteredBN_Row(opt.n_inputs,cfg_hidden[1]))
     -- model:add(module_affine(cfg_hidden[1],1,true))
@@ -258,7 +258,7 @@ function create_model(opt)
          model:add(block_WCBN_Row(cfg_hidden[i],cfg_hidden[i+1])) 
        end
      end 
-   elseif opt.model_method=='WCBN_Row_scale' then
+   elseif opt.model=='CWN_Row_scale' then
 
      model:add(nn.Linear_Weight_CenteredBN_Row(opt.n_inputs,cfg_hidden[1]))
      model:add(module_affine(cfg_hidden[1],1,true))
@@ -272,7 +272,7 @@ function create_model(opt)
      end
 
       
-   elseif opt.model_method=='WN_Row_batch' then
+   elseif opt.model=='WN_Row_batch' then
 
      model:add(nn.Linear_Weight_BN_Row(opt.n_inputs,cfg_hidden[1]))
    --  model:add(module_affine(cfg_hidden[1],1,true))
@@ -284,7 +284,7 @@ function create_model(opt)
        end
      end
  
-   elseif opt.model_method=='WN_Row_scale_batch' then
+   elseif opt.model=='WN_Row_scale_batch' then
 
      model:add(nn.Linear_Weight_BN_Row(opt.n_inputs,cfg_hidden[1]))
      model:add(module_affine(cfg_hidden[1],1,true))
@@ -298,7 +298,7 @@ function create_model(opt)
  
   
 
-   elseif opt.model_method=='WCBN_Row_batch' then
+   elseif opt.model=='CWN_Row_batch' then
 
      model:add(nn.Linear_Weight_CenteredBN_Row(opt.n_inputs,cfg_hidden[1]))
    --  model:add(module_affine(cfg_hidden[1],1,true))
@@ -311,7 +311,7 @@ function create_model(opt)
      end
 
 
-   elseif opt.model_method=='WCBN_Row_scale_batch' then
+   elseif opt.model=='CWN_Row_scale_batch' then
 
      model:add(nn.Linear_Weight_CenteredBN_Row(opt.n_inputs,cfg_hidden[1]))
      model:add(module_affine(cfg_hidden[1],1,true))
