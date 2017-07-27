@@ -4,7 +4,7 @@ Centered Weight Normalization
 This project is the code of the paper: Centered Weight Normalization  in Accelerating Training of Deep Neural Networks ( ICCV 2017).
 
 
-### Requirements and Dependency
+### 1.Requirements and Dependency
 * install [Torch](http://torch.ch) with CUDA GPU
 <br>
 
@@ -15,7 +15,7 @@ This project is the code of the paper: Centered Weight Normalization  in Acceler
 luarocks install optnet
 
 
-### Experiments in the paper
+### 2.Experiments in the paper
 
 #### MLP architecture over SVHN dataset
 
@@ -26,7 +26,6 @@ luarocks install optnet
 We get the preprocessed SVHN dataset for MLP architecture.
 <br> 
 Note that this script is based on the dataset process script at: https://github.com/torch/tutorials/blob/master/A_datasets/svhn.lua
-<br>
 
 *	Execute:  'th exp_MLP.lua '
 
