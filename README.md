@@ -2,8 +2,14 @@ Centered Weight Normalization
 ======================================
 
 This project is the code of the paper: Centered Weight Normalization  in Accelerating Training of Deep Neural Networks ( ICCV 2017).
-
-
+* bibtex:
+```Bash
+@INPROCEEDINGS{Huang2017ICCV,
+    author = {Lei Huang and Xianglong Liu and Yang Liu and  Bo Lang and Dacheng Tao},
+    title = {Centered Weight Normalization  in Accelerating Training of Deep Neural Networks},
+    booktitle = {ICCV},
+    year = {2017}}
+ ```
 ## Requirements and Dependency
 * install [Torch](http://torch.ch) with CUDA GPU
 * install [cudnn v5](http://torch.ch)
