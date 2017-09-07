@@ -98,8 +98,9 @@ function Linear_Weight_BN_Row:updateOutput(input)
      end 
       
       
-      self.W:repeatTensor(self.std,1,n_input)
-      self.W:cmul(self.weight)
+     -- self.W:repeatTensor(self.std,1,n_input)
+     -- self.W:cmul(self.weight)
+        self.W:copy(self.weight):cmul(self.std:expandAs(self.weight))
 
       self.output:addmm(0, self.output, 1, input, self.W:t())
      -- self.output:addr(1, self.addBuffer, self.bias)
@@ -156,15 +157,17 @@ function Linear_Weight_BN_Row:accGradParameters(input, gradOutput, scale)
          self.buffer:mean(self.gradWeight,2)
       end
 
-      self.gradWeight:repeatTensor(self.buffer,1, n_input)
-      self.gradWeight:cmul(self.W):mul(-1)
+      --self.gradWeight:repeatTensor(self.buffer,1, n_input)
+      --self.gradWeight:cmul(self.W):mul(-1)
+        self.gradWeight:copy(self.W):mul(-1):cmul(self.buffer:expandAs(self.gradWeight))
    
 
    
         self.gradWeight:add(self.gradW)
         
-        self.buffer:repeatTensor(self.std,1,n_input)    
-        self.gradWeight:cmul(self.buffer)
+        --self.buffer:repeatTensor(self.std,1,n_input)    
+        --self.gradWeight:cmul(self.buffer)
+        self.gradWeight:cmul(self.std:expandAs(self.gradWeight))
 
       
      -- self.gradBias:addmv(scale, gradOutput:t(), self.addBuffer)

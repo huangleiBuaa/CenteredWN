@@ -1,22 +1,28 @@
 local Linear_Weight_CenteredBN_Row, parent = torch.class('nn.Linear_Weight_CenteredBN_Row', 'nn.Module')
 
-function Linear_Weight_CenteredBN_Row:__init(inputSize,outputSize,orth_flag,unitLength_flag)
+function Linear_Weight_CenteredBN_Row:__init(inputSize,outputSize, flag_adjustScale,init_flag)
    parent.__init(self)
 
-   self.weight = torch.Tensor( outputSize,inputSize) --make sure the weight is symetric and semi-definite
-  -- self.bias = torch.Tensor(outputSize)
+   self.weight = torch.Tensor( outputSize,inputSize) 
    self.gradWeight = torch.Tensor(outputSize, inputSize)
-  -- self.gradBias = torch.Tensor(outputSize)
-     ----if use unitLength, means the F_norm(W_i)=1 (like WeightNormalization style),
-      -- if not, means the var(W_i)=1(like batchNormalization), The difference is 1/n
    
-  if unitLength_flag ~= nil then
-      assert(type(unitLength_flag) == 'boolean', 'unitLength_flag has to be true/false')
-      self.unitLength_flag = unitLength_flag
+  if flag_adjustScale ~= nil then
+      self.flag_adjustScale= flag_adjustScale
    else
-      self.unitLength_flag = true
+      self.flag_adjustScale= false
+   end 
+  if init_flag ~= nil then
+      self.init_flag = init_flag
+   else
+      self.init_flag = 'RandInit'
    end 
 
+    self.g=torch.Tensor(outputSize):fill(1)
+    if self.flag_adjustScale then
+     self.gradG=torch.Tensor(outputSize)
+     self.gradBias = torch.Tensor(outputSize)
+     self.bias = torch.Tensor(outputSize):fill(0)
+    end 
     self:reset()
 
 end
@@ -24,6 +30,15 @@ end
 
 
 function Linear_Weight_CenteredBN_Row:reset(stdv)
+    if self.init_flag=='RandInit' then
+        self:reset_RandInit(stdv)
+    elseif self.init_flag=='OrthInit' then
+        self:reset_orthogonal(stdv)
+    end
+    return self
+end
+
+function Linear_Weight_CenteredBN_Row:reset_RandInit(stdv)
    if stdv then
       stdv = stdv * math.sqrt(3)
    else
@@ -40,10 +55,7 @@ function Linear_Weight_CenteredBN_Row:reset(stdv)
       self.weight:uniform(-stdv, stdv)
      -- self.bias:uniform(-stdv, stdv)
    end
-
-   return self
 end
-
 
 function Linear_Weight_CenteredBN_Row:reset_orthogonal()
     local initScale = 1.1 -- math.sqrt(2)
@@ -74,35 +86,31 @@ function Linear_Weight_CenteredBN_Row:updateOutput(input)
       if self.output:nElement() ~= nElement then
          self.output:zero()
       end
-      
-      self.buffer = self.buffer or input.new()
-      self.buffer2 = self.buffer2 or input.new()
-      self.centered = self.centered or input.new()
+      self.addBuffer = self.addBuffer or input.new()      
+      self.addBuffer:resize(nframe):fill(1)
+
+      self.mean=self.mean or input.new()
       self.std=self.std or input.new()
 
       
       self.W=self.W or input.new()
+      self.W_hat=self.W_hat or input.new()
       self.W:resizeAs(self.weight)
 
-      self.buffer:mean(self.weight, 2) 
-      self.buffer2:repeatTensor(self.buffer, 1, n_input)
-      self.centered:add(self.weight, -1, self.buffer2)
+      self.mean:mean(self.weight, 2) 
+      self.weight:add(-self.mean:expand(n_output,n_input))
       
-      if self.unitLength_flag then 
-        self.std:resize(n_output,1):copy(self.centered:norm(2,2)):pow(-1)
-      else   
-      
-        self.buffer:resizeAs(self.centered):copy(self.centered):cmul(self.centered)
-        self.std:mean(self.buffer, 2):sqrt():pow(-1)
-      end
+       self.std:resize(n_output,1):copy(self.weight:norm(2,2)):pow(-1)
       
       
-      self.W:repeatTensor(self.std,1,n_input)
-      self.W:cmul(self.centered)
-
+      
+       self.W_hat:resizeAs(self.weight):copy(self.weight):cmul(self.std:expand(n_output,n_input))
+      self.W:copy(self.W_hat):cmul(self.g:view(n_output,1):expand(n_output,n_input))
       self.output:addmm(0, self.output, 1, input, self.W:t())
-     -- self.output:addr(1, self.addBuffer, self.bias)
-   else
+      if self.flag_adjustScale then
+         self.output:addr(1, self.addBuffer, self.bias)
+       end 
+  else
       error('input must be vector or matrix')
    end
    
@@ -142,39 +150,43 @@ function Linear_Weight_CenteredBN_Row:accGradParameters(input, gradOutput, scale
       local n_output=self.weight:size(1)
       local n_input=self.weight:size(2)
       self.gradW=self.gradW or input.new()
-
-
+      self._scale=self._scale or input.new()
+      self._scale:resizeAs(self.std):copy(self.std):cmul(self.g)
       self.gradW:resize(gradOutput:size(2),input:size(2))
       self.gradW:mm(gradOutput:t(), input)  --dL/dW
 
       
-      self.gradWeight:cmul(self.W, self.gradW)
-     
-     if self.unitLength_flag then
-         self.buffer:sum(self.gradWeight,2)   
-      else 
-        self.buffer:mean(self.gradWeight,2)
-      end
-      
-      self.gradWeight:repeatTensor(self.buffer,1, n_input)
-      self.gradWeight:cmul(self.W):mul(-1)
+      self.gradWeight:cmul(self.W_hat, self.gradW)
+       self.mean:sum(self.gradWeight,2)   
+      self.gradWeight:copy(-self.W_hat):cmul(self.mean:expand(n_output,n_input))
    
-      self.buffer:mean(self.gradW,2) 
-      self.buffer2:repeatTensor(self.buffer, 1, n_input)
-        self.gradWeight:add(self.gradW):add(-1, self.buffer2)
+      self.mean:mean(self.gradW,2) 
+      self.gradWeight:add(self.gradW):add(-self.mean:expand(n_output,n_input))
         
-        self.buffer:repeatTensor(self.std,1,n_input)    
-        self.gradWeight:cmul(self.buffer)
+        self.gradWeight:cmul(self._scale:expand(n_output,n_input))
+    --print(self.g)
+    --print(self.bias)
 
-      
-     -- self.gradBias:addmv(scale, gradOutput:t(), self.addBuffer)
+     if self.flag_adjustScale then 
+        self.gradBias:addmv(scale, gradOutput:t(), self.addBuffer)
+        self.W_hat:cmul(self.gradW)
+        self.gradG:sum(self.W_hat,2)
+    end
    else
       error('input must be vector or matrix')
    end
    
 
-   
+end
 
+function Linear_Weight_CenteredBN_Row:parameters()
+
+    if self.flag_adjustScale then 
+        return {self.weight, self.g, self.bias}, {self.gradWeight, self.gradG, self.gradBias}
+     else
+        return {self.weight}, {self.gradWeight}
+
+    end 
 end
 
 -- we do not need to accumulate parameters when sharing

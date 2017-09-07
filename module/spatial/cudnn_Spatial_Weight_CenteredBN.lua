@@ -250,17 +250,20 @@ function Spatial_Weight_CenteredBN:updateOutput(input)
    self.buffer = self.buffer or input.new()
    self.buffer2 = self.buffer2 or input.new()
    self.centered = self.centered or input.new()
+   self.mean=self.mean or input.new()
    self.std=self.std or input.new()
-  self.buffer:mean(self.weight, 2)
-   self.buffer2:repeatTensor(self.buffer, 1, n_input)
-   self.centered:add(self.weight, -1, self.buffer2)
+  
+        self.mean=self.mean or input.new()
+              self.std=self.std or input.new()
 
-   self.std:resize(n_output,1):copy(self.centered:norm(2,2)):add(self.eps):pow(-1)
+    self.W=self.W or input.new()
+    self.W:resizeAs(self.weight)
+     self.mean:mean(self.weight, 2)
+    self.weight:add(-self.mean:expand(n_output,n_input))
+   self.std:resize(n_output,1):copy(self.weight:norm(2,2)):pow(-1)
+  self.W:copy(self.weight):cmul(self.std:expand(n_output,n_input))
 
-    self.W:repeatTensor(self.std,1,n_input)
-    self.W:cmul(self.centered)
-   
-   unviewW(self)
+  unviewW(self)
    unviewWeight(self)
  end
      ------------------------------------------------cudnn excute-----------------------
@@ -365,21 +368,15 @@ function Spatial_Weight_CenteredBN:accGradParameters(input, gradOutput, scale)
    viewGradW(self)
     local n_output=self.weight:size(1)
      local n_input=self.weight:size(2)
+
+
      self.gradWeight:cmul(self.W, self.gradW)
+     self.mean:sum(self.gradWeight,2)
+   self.gradWeight:copy(-self.W):cmul(self.mean:expand(n_output,n_input))
 
-     self.buffer:sum(self.gradWeight,2)
-
-
-     self.gradWeight:repeatTensor(self.buffer,1, n_input)
-     self.gradWeight:cmul(self.W):mul(-1)
-
-      self.buffer:mean(self.gradW,2)
-      self.buffer2:repeatTensor(self.buffer, 1, n_input)
-        self.gradWeight:add(self.gradW):add(-1, self.buffer2)
-
-
-     self.buffer:repeatTensor(self.std,1,n_input)
-    self.gradWeight:cmul(self.buffer)
+     self.mean:mean(self.gradW,2)
+    self.gradWeight:add(self.gradW):add(-self.mean:expand(n_output,n_input))
+   self.gradWeight:cmul(self.std:expand(n_output,n_input))
 
    unviewWeight(self)
    unviewW(self)
