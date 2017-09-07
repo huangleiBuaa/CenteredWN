@@ -245,5 +245,5 @@ results.test_times=test_times
 
 results.confusion=confusion
 results.opt.optimState.dfdx=nil
-torch.save('result_ICML_'..opt.model..'_'..opt.optimization..'_lr'..opt.learningRate..'_mm'..opt.momentum..'_'..opt.weightDecay
+torch.save('result_'..opt.model..'_'..opt.optimization..'_lr'..opt.learningRate..'_mm'..opt.momentum..'_'..opt.weightDecay
 ..'.dat',results) 
