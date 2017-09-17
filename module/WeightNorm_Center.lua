@@ -1,5 +1,16 @@
+--[[
 --Centered  Weight Normalization
 -- the code is based on the Torch implement of  weight normalizaiton on https://github.com/torch/nn/blob/master/WeightNorm.lua  and the refered paper: https://arxiv.org/pdf/1602.07868v3.pdf
+---------------------------------------------------------------------
+----Author: Lei Huang 
+----mail: huanglei@nlsde.buaa.edu.cn
+-----
+--]]
+
+
+
+
+
 local WeightNorm_Center, parent = torch.class("nn.WeightNorm_Center", "nn.Decorator")
 
 function WeightNorm_Center:__init(module, outputDim, flag_adjustScale)

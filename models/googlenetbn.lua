@@ -1,4 +1,5 @@
 -- Batch normalized googlenet
+--this code is from: https://github.com/soumith/imagenet-multiGPU.torch
 local function inception(input_size, config)
    local concat = nn.Concat(2)
    if config[1][1] ~= 0 then

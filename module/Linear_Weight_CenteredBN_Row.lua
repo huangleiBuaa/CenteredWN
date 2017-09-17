@@ -1,3 +1,14 @@
+--[[
+----This file implements Centered  linear module, which wraps Centered weight normalization
+----into the linear module  for 2D input used in MLP architecture. 
+----
+---------------------------------------------------------------------
+----Author: Lei Huang 
+----mail: huanglei@nlsde.buaa.edu.cn
+-----
+----]]
+--]]
+
 local Linear_Weight_CenteredBN_Row, parent = torch.class('nn.Linear_Weight_CenteredBN_Row', 'nn.Module')
 
 function Linear_Weight_CenteredBN_Row:__init(inputSize,outputSize, flag_adjustScale,init_flag)

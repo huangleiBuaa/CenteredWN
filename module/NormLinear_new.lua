@@ -1,3 +1,15 @@
+--[[
+----This file implements natural neural network based on the paper:https://arxiv.org/abs/1507.00210
+----
+--Only for 2D input used in MLP architecture. 
+----
+---------------------------------------------------------------------
+----Author: Lei Huang 
+----mail: huanglei@nlsde.buaa.edu.cn
+-----
+----]]
+--]]
+
 local NormLinear_new, parent = torch.class('nn.NormLinear_new', 'nn.Module')
 
 function NormLinear_new:__init(inputSize, outputSize,affine)

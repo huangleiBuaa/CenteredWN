@@ -1,3 +1,7 @@
+--[[
+--
+--*********************************************************************************************
+--Note: this model is based on the original residual network implemented by facebook: https://github.com/facebook/fb.resnet.torch
 --
 --  Copyright (c) 2016, Facebook, Inc.
 --  All rights reserved.
@@ -7,7 +11,11 @@
 --  of patent rights can be found in the PATENTS file in the same directory.
 --
 --  The ResNet model definition
+--*************************************************************************************************
+--  We simply replace the standard linear module by our centered linear module in this architecture
 --
+--]]
+
 
 local nn = require 'nn'
 require 'cunn'

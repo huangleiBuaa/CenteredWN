@@ -1,4 +1,9 @@
 -- Batch normalized googlenet
+--this code is from: https://github.com/soumith/imagenet-multiGPU.torch
+----  We simply replace the standard linear module by our centered linear module in this architecture
+
+
+
 require '../module/spatial/Spatial_Scaling'
 require '../module/spatial/cudnn_Spatial_Weight_CenteredBN'
 
