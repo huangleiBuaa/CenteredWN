@@ -1,7 +1,7 @@
 Centered Weight Normalization
 ======================================
 
-This project is the code of the paper: Centered Weight Normalization  in Accelerating Training of Deep Neural Networks ( ICCV 2017).
+This project is the Torch implementation of the paper: Centered Weight Normalization  in Accelerating Training of Deep Neural Networks ( ICCV 2017).
 * bibtex:
 ```Bash
 @INPROCEEDINGS{Huang2017ICCV,
@@ -11,9 +11,9 @@ This project is the code of the paper: Centered Weight Normalization  in Acceler
     year = {2017}}
  ```
 ## Requirements and Dependency
-* install [Torch](http://torch.ch) with CUDA GPU
-* install [cudnn v5](http://torch.ch)
-* install dependent lua packages optnet by run:
+* Install [Torch](http://torch.ch) with CUDA GPU
+* Install [cudnn v5](http://torch.ch)
+* Install dependent lua packages optnet by run:
 luarocks install optnet
 
 
@@ -21,12 +21,12 @@ luarocks install optnet
 
 #### 1. MLP architecture over SVHN dataset
 
-* Dataset prepraration, by running:
+* Dataset prepraration:  We can get the preprocessed SVHN dataset for MLP architecture by running:
 ```Bash
   cd dataset
    th preProcess_div256.lua
  ```
-We get the preprocessed SVHN dataset for MLP architecture.
+
 Note that this script is based on the [Torch script for SVHN](https://github.com/torch/tutorials/blob/master/A_datasets/svhn.lua)
 
 *	Execute: 
@@ -34,20 +34,20 @@ Note that this script is based on the [Torch script for SVHN](https://github.com
  th exp_MLP.lua 
  ```
 
-*	To reproduce the experimental results, you can run the script below, which include all the information of experimental configuration: 
+*	To reproduce the experimental results, you can run the script below, which include all the information of experimental configurations: 
 ```Bash
  bash 1_execute_MLP_svhn.sh  
  bash 1_execute_MLP_svhn_adam.sh  
  ```
 
 #### 2. VGG-A architecture over Cifar-10 dataset
-* Dataset preparations: the dataset is based on the preprocessed script on: https://github.com/szagoruyko/cifar.torch, and put the data file in the directory: './dataset/cifar_provider.t7'
+* Dataset preparations: the dataset is based on the preprocessed script on: https://github.com/szagoruyko/cifar.torch, and you should put the data file in the directory: './dataset/cifar_provider.t7'
 
 * Execute:
 ```Bash
  th exp_vggA.lua –dataPath './dataset/cifar_provider.t7'
  ```
- *	To reproduce the experimental results, you can run the script below, which include all the information of experimental configuration: 
+ *	To reproduce the experimental results, you can run the script below, which include all the information of experimental configurations: 
 ```Bash
  bash   2_execute_Conv_CIFAR10_vggA.sh
  ```
@@ -59,7 +59,7 @@ Note that this script is based on the [Torch script for SVHN](https://github.com
 ```Bash
 th exp_GoogleNet_dataWhitening.lua –dataPath './dataset/cifar100_whitened.t7'
  ```
-  *	To reproduce the experimental results, you can run the script below, which include all the information of experimental configuration: 
+  *	To reproduce the experimental results, you can run the script below, which include all the information of experimental configurations: 
 ```Bash
  3_execute_Conv_CIFAR100_GoogLeNet.sh 
  ```
@@ -69,12 +69,12 @@ th exp_GoogleNet_dataWhitening.lua –dataPath './dataset/cifar100_whitened.t7'
 
 #### 4. Residual network architecture over Cifar datasets
 
- *	Dataset preparations: The dataset is based on [original CIFAR datasets](https://yadi.sk/d/eFmOduZyxaBrT), and the data file should put in the directory: ./dataset/cifar_original.t7.  
+ *	Dataset preparations: The dataset is based on [original CIFAR datasets](https://yadi.sk/d/eFmOduZyxaBrT), and the data file should be put in the directory: ./dataset/cifar_original.t7.  
  *	Execute: 
 ```Bash
 th exp_res_dataNorm.lua –dataPath './dataset/cifar10_original.t7'
  ```
-   *	To reproduce the experimental results, you can run the script below, which include all the information of experimental configuration: 
+   *	To reproduce the experimental results, you can run the script below, which include all the information of experimental configurations: 
 ```Bash
 4_execute_Conv_CIFAR10_resnet.sh
  ```
