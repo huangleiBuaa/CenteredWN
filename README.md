@@ -10,6 +10,14 @@ This project is the Torch implementation of the paper: Centered Weight Normaliza
     booktitle = {ICCV},
     year = {2017}}
  ```
+
+ ### Updates
+* Add the [' pytorch module'](./module_pytorch/CWN.py)  of CWN.     2019-12-07.
+
+
+
+
+
 ## Requirements and Dependency
 * Install [Torch](http://torch.ch) with CUDA GPU
 * Install [cudnn v5](http://torch.ch)
